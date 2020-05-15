@@ -4,6 +4,7 @@ import operator
 import json
 import itertools
 import http.client
+import urllib.parse
 
 import voluptuous as vol
 
@@ -16,7 +17,7 @@ from homeassistant.util import Throttle
 
 import homeassistant.helpers.config_validation as cv
 
-__version__ = '0.0.1'
+__version__ = '0.0.2'
 
 _LOGGER = logging.getLogger(__name__)
 _RESOURCE = 'app.greenchoice.nl'
@@ -130,7 +131,7 @@ class GreenchoiceSensor(Entity):
         elif self._overeenkomst_id == CONF_OVEREENKOMST_ID or self._overeenkomst_id is None:
             _LOGGER.error("Need a overeenkomst id (see docs how to get one)!")
 
-        if data is None:
+        if data is None or self._measurement_type not in data:
             self._state = STATE_UNKNOWN
         else:
             self._state = data[self._measurement_type]
@@ -162,7 +163,13 @@ class GreenchoiceApiData:
             'User-Agent': "Mozilla/5.0 (iPhone; CPU iPhone OS 5_0 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 Mobile/9A334 Safari/7534.48.3",
             'Host': "app.greenchoice.nl"
         }
-        self._tokenquery = "grant_type=password&client_id=MobileApp&client_secret=A6E60EBF73521F57&username="+username+"&password="+password
+        self._tokenquery = urllib.parse.urlencode({
+            'grant_type': 'password',
+            'client_id': 'MobileApp',
+            'client_secret': 'A6E60EBF73521F57',
+            'username': username,
+            'password': password,
+        })
 
     @Throttle(MIN_TIME_BETWEEN_UPDATES)
     def update(self):
@@ -171,25 +178,34 @@ class GreenchoiceApiData:
             response = http.client.HTTPSConnection(self._resource, timeout=10)
             response.request("POST", "/token", body = self._tokenquery, headers = self._tokenheaders)
             json_result = json.loads(response.getresponse().read().decode('utf-8'))
+            _LOGGER.debug("token json_response=%s", json_result)
 
-            self.token = json_result["access_token"]
+            if "access_token" in json_result and "error" not in json_result:
+                self.token = json_result["access_token"]
 
-            try:
-                response = http.client.HTTPSConnection(self._resource, timeout=10)
-                response.request("GET", "/api/v2/meterstanden/getstanden?overeenkomstid=" + self._overeenkomst_id, headers = {'Authorization': "Bearer "+self.token})
-                json_result = json.loads(response.getresponse().read().decode('utf-8'))
+                try:
+                    response = http.client.HTTPSConnection(self._resource, timeout=10)
+                    response.request("GET", "/api/v2/meterstanden/getstanden?overeenkomstid=" + self._overeenkomst_id, headers = {'Authorization': "Bearer "+self.token})
+                    json_result = json.loads(response.getresponse().read().decode('utf-8'))
+                    _LOGGER.debug("getstanden json_response=%s", json_result)
 
-                self.result["currentEnergyNight"] = json_result[0]["MeterstandenOutput"][0]["Laag"]
-                self.result["currentEnergyDay"] = json_result[0]["MeterstandenOutput"][0]["Hoog"]
-                self.result["currentEnergyTotal"] = json_result[0]["MeterstandenOutput"][0]["Hoog"] + json_result[0]["MeterstandenOutput"][0]["Laag"]
-                self.result["currentGas"] = json_result[1]["MeterstandenOutput"][0]["Hoog"]
-                self.result["measurementDate"] = json_result[0]["DatumInvoer"]
-                #TODO: Do a check if it is the right meter type? Now it assumes order in response.
-            except http.client.HTTPException:
-                _LOGGER.error("Could not retrieve current numbers.")
-                self.result = "Could not retrieve current numbers."         
-                    
+                    self.result["currentEnergyNight"] = json_result[0]["MeterstandenOutput"][0]["Laag"]
+                    self.result["currentEnergyDay"] = json_result[0]["MeterstandenOutput"][0]["Hoog"]
+                    self.result["currentEnergyTotal"] = json_result[0]["MeterstandenOutput"][0]["Hoog"] + json_result[0]["MeterstandenOutput"][0]["Laag"]
+                    self.result["currentGas"] = json_result[1]["MeterstandenOutput"][0]["Hoog"]
+                    self.result["measurementDate"] = json_result[0]["DatumInvoer"]
+                    #TODO: Do a check if it is the right meter type? Now it assumes order in response.
+                except http.client.HTTPException:
+                    _LOGGER.error("Could not retrieve current numbers.")
+                    self.result = "Could not retrieve current numbers."
+            else:
+                if "error_description" in json_result:
+                    error_description = json_result["error_description"]
+                else:
+                    error_description = "unknown"
+                self.result = f"Could not retrieve token ({error_description})."
+                _LOGGER.error(self.result)
+
         except http.client.HTTPException:
             _LOGGER.error("Could not retrieve token.")
             self.result = "Could not retrieve token."
-       
