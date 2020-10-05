@@ -173,6 +173,7 @@ class GreenchoiceApiData:
 
     @Throttle(MIN_TIME_BETWEEN_UPDATES)
     def update(self):
+        self.result = {}
 
         try:
             response = http.client.HTTPSConnection(self._resource, timeout=10)
