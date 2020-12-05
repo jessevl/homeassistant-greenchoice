@@ -1,8 +1,9 @@
 {
     "domain": "greenchoice",
     "name": "Sensor Greenchoice",
-    "documentation": "",
+    "documentation": "https://github.com/jessevl/homeassistant-greenchoice/",
+    "issue_tracker": "https://github.com/jessevl/homeassistant-greenchoice/issues",
     "dependencies": [],
-    "codeowners": [],
+    "codeowners": ["@jessevl"],
     "requirements": []
   }
