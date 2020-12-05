@@ -22,3 +22,16 @@ sensor:
     username: !secret greenchoiceuser
     overeenkomst_id: !secret greenchoicecontract
 ```
+
+### Alternative to Postman:
+2. It's possible to retrieve the greenchoice contract info using a curl command:
+    1. Get the token:
+    ```
+    curl https://app.greenchoice.nl/token -X POST -H "Content-Type: application/x-www-form-urlencoded" --data-urlencode "grant_type=password" --data-urlencode "client_id=MobileApp" --data-urlencode "client_secret=A6E60EBF73521F57" --data-urlencode "username=********" --data-urlencode "password=********"
+    ```
+    2. Get the contract info:
+    ```
+    curl https://app.greenchoice.nl/api/v1/klant/getovereenkomsten -X GET -H "Authorization: Bearer ********"
+    ```
+(Credits for this info go to eelcohn)
+    
