@@ -190,12 +190,13 @@ class GreenchoiceApiData:
                     json_result = json.loads(response.getresponse().read().decode('utf-8'))
                     _LOGGER.debug("getstanden json_response=%s", json_result)
 
-                    self.result["currentEnergyNight"] = json_result[0]["MeterstandenOutput"][0]["Laag"]
-                    self.result["currentEnergyDay"] = json_result[0]["MeterstandenOutput"][0]["Hoog"]
-                    self.result["currentEnergyTotal"] = json_result[0]["MeterstandenOutput"][0]["Hoog"] + json_result[0]["MeterstandenOutput"][0]["Laag"]
-                    self.result["currentGas"] = json_result[1]["MeterstandenOutput"][0]["Hoog"]
+                    currentEnergy = [x for x in json_result if x['MeterstandenOutput'][0]['Product'] == 1]
+                    currentGas = [x for x in json_result if x['MeterstandenOutput'][0]['Product'] == 3]
+                    self.result["currentEnergyNight"] = 0 if len(currentEnergy) == 0 else currentEnergy[0]["MeterstandenOutput"][0]["Laag"]
+                    self.result["currentEnergyDay"] = 0 if len(currentEnergy) == 0 else currentEnergy[0]["MeterstandenOutput"][0]["Hoog"]
+                    self.result["currentEnergyTotal"] = 0 if len(currentEnergy) == 0 else currentEnergy[0]["MeterstandenOutput"][0]["Hoog"] + currentEnergy[0]["MeterstandenOutput"][0]["Laag"]
+                    self.result["currentGas"] = 0 if len(currentGas) == 0 else currentGas[0]["MeterstandenOutput"][0]["Hoog"]
                     self.result["measurementDate"] = json_result[0]["DatumInvoer"]
-                    #TODO: Do a check if it is the right meter type? Now it assumes order in response.
                 except http.client.HTTPException:
                     _LOGGER.error("Could not retrieve current numbers.")
                     self.result = "Could not retrieve current numbers."
