@@ -33,6 +33,7 @@ ATTR_NAME = 'name'
 ATTR_UPDATE_CYCLE = 'update_cycle'
 ATTR_ICON = 'icon'
 ATTR_MEASUREMENT_DATE = 'date'
+ATTR_UNIT_OF_MEASUREMENT = 'unit_of_measurement'
 
 MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=3600)
 
@@ -75,6 +76,7 @@ class GreenchoiceSensor(Entity):
         self._password = password
         self._measurement_type = measurement_type
         self._measurement_date = None
+        self._unit_of_measurement = None
         self._state = None
         self._icon = None
 
@@ -112,10 +114,15 @@ class GreenchoiceSensor(Entity):
         return self._measurement_date
 
     @property
+    def unit_of_measurement(self):
+        return self._unit_of_measurement
+        
+    @property
     def device_state_attributes(self):
         """Return the state attributes."""
         return{
-            ATTR_MEASUREMENT_DATE: self._measurement_date
+            ATTR_MEASUREMENT_DATE: self._measurement_date,
+            ATTR_UNIT_OF_MEASUREMENT: self._unit_of_measurement
         }
 
     def update(self):
@@ -137,19 +144,22 @@ class GreenchoiceSensor(Entity):
             self._state = data[self._measurement_type]
             self._measurement_date = data["measurementDate"]
           
-        #TODO: Add m3 and kwh
         if self._measurement_type == "currentEnergyNight":
             self._icon = 'mdi:weather-sunset-down'
             self._name = 'currentEnergyNight'
+            self._unit_of_measurement = "kWh"
         if self._measurement_type == "currentEnergyDay":
             self._icon = 'mdi:weather-sunset-up'
             self._name = 'currentEnergyDay'
+            self._unit_of_measurement = "kWh"
         if self._measurement_type == "currentEnergyTotal":
             self._icon = 'mdi:power-plug'
             self._name = 'currentEnergyTotal'
+            self._unit_of_measurement = "kWh"
         if self._measurement_type == "currentGas":
             self._icon = 'mdi:fire'
             self._name = 'currentGas'
+            self._unit_of_measurement = "m³"
 
 
 class GreenchoiceApiData:
