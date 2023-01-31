@@ -1,5 +1,6 @@
-# Home Assistant Greenchoice Sensor
+# ~~Home Assistant Greenchoice Sensor.~~ This repo is deprecated and an updated fork can be found [here](https://github.com/barisdemirdelen/homeassistant-greenchoice)!
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg)](https://github.com/custom-components/hacs)
+
 
 This is a Home Assistant custom component (sensor) that connects to the Greenchoice API to retrieve current usage data (daily meter data).
 
